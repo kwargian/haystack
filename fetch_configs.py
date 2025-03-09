@@ -13,7 +13,7 @@ class DeviceInfo:
     config: str = field(default=None)
 
 
-def get_devices(client):
+def get_devices(client, include_inactive=False):
     """
     Get the list of devices from the analytics dataset at the /DatasetInfo/Devices path.
     A k/v at this path is a k of the device serial and v is a map that looks like this:
@@ -50,7 +50,7 @@ def get_devices(client):
         for notif in batch["notifications"]:
             serial = list(notif["updates"])[0]
             hostname = notif["updates"][serial]["hostname"]
-            if notif["updates"][serial]["status"] == "inactive":
+            if notif["updates"][serial]["status"] == "active" or include_inactive:
                 devices.append(DeviceInfo(hostname=hostname, serial_number=serial))
     return devices
 
@@ -110,9 +110,9 @@ def get_config(client, device):
     return config
 
 
-def get_configs(apiserver, access_token):
+def get_configs(apiserver, access_token, include_inactive=False):
     with GRPCClient(apiserver, token=access_token) as client:
-        devices = get_devices(client)
+        devices = get_devices(client, include_inactive)
         for device in devices:
             device.config = get_config(client, device)
             logging.debug(f"{device.hostname} config: {device.config}")

@@ -25,6 +25,9 @@ if __name__ == "__main__":
     fetch_parser.add_argument(
         "--access-token", required=True, help="CVaaS access token file to read", metavar="cluster.tok"
     )
+    fetch_parser.add_argument(
+        "--include-inactive", action="store_true", default=False, help="Include inactive devices when fetching configs"
+    )
 
     # Search command
     search_parser = subparsers.add_parser("search", help="Search device configurations")
@@ -38,7 +41,7 @@ if __name__ == "__main__":
         parser.print_help()
         exit(1)
     elif args.command == "fetch-configs":
-        devices = get_configs(args.apiserver, args.access_token)
+        devices = get_configs(args.apiserver, args.access_token, args.include_inactive)
 
         # device configs retrieved, time to blow away our current duckdb file and write a new one
         logging.info("Destroying existing duckdb file")
