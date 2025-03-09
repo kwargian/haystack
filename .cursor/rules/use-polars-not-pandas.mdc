@@ -1,0 +1,55 @@
+---
+description: Enforce using polars instead of pandas for data manipulation in this projectı
+globs: *.py
+---
+ <rule>
+name: use-polars-not-pandas
+description: Enforce using polars instead of pandas for data manipulation in this project
+
+filters:
+  # Match Python files
+  - type: file_extension
+    pattern: "\\.py$"
+  # Match pandas imports and usage
+  - type: content
+    pattern: "(?m)^\\s*import\\s+pandas|^\\s*from\\s+pandas\\s+import|\\bpd\\."
+
+actions:
+  - type: reject
+    message: |
+      ❌ Please use polars instead of pandas in this project.
+      
+      Pandas usage detected. This project standardizes on polars for better performance 
+      and memory efficiency. Here's how to convert common pandas patterns to polars:
+
+      Pandas -> Polars
+      ---------------
+      import pandas as pd -> import polars as pl
+      pd.read_csv() -> pl.read_csv()
+      pd.DataFrame() -> pl.DataFrame()
+      df.groupby() -> df.group_by()
+      
+      For more conversion examples, see:
+      https://pola-rs.github.io/polars/user-guide/migration/pandas/
+
+  - type: suggest
+    conditions:
+      - pattern: "import\\s+pandas"
+        message: "Replace 'import pandas' with 'import polars as pl'"
+      - pattern: "from\\s+pandas\\s+import"
+        message: "Import from polars instead: 'import polars as pl'"
+      - pattern: "pd\\."
+        message: "Use 'pl.' instead of 'pd.' for polars operations"
+
+examples:
+  - input: |
+      import pandas as pd
+      df = pd.read_csv("data.csv")
+    output: |
+      import polars as pl
+      df = pl.read_csv("data.csv")
+
+metadata:
+  priority: high
+  version: 1.0
+</rule>

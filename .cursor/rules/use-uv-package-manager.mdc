@@ -1,0 +1,35 @@
+---
+description: Always use uv as the package manager for this project
+globs: 
+---
+# Use UV Package Manager
+
+Always use `uv` as the package manager for this project instead of other tools like pip, poetry, or pipenv.
+
+## Why?
+- UV is significantly faster than other Python package managers
+- Provides consistent dependency resolution
+- Better caching and parallel downloads
+- Compatible with standard Python packaging tools
+
+## Examples
+
+### Don't use poetry
+```bash
+poetry add requests
+```
+
+### Don't use pip
+```bash
+pip install requests
+```
+
+### Don't use pipenv
+```bash
+pipenv install requests
+```
+
+### Do use uv to install packages
+```bash
+uv add requests
+```
