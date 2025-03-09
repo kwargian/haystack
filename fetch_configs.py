@@ -10,6 +10,7 @@ from cloudvision.Connector.grpc_client import create_query
 class DeviceInfo:
     hostname: str
     serial_number: str
+    config: str = field(default=None)
 
 
 def get_devices(client):
@@ -49,8 +50,7 @@ def get_devices(client):
         for notif in batch["notifications"]:
             serial = list(notif["updates"])[0]
             hostname = notif["updates"][serial]["hostname"]
-            # if notif["updates"][serial]["status"] == "active":
-            if hostname == "tuf250":
+            if notif["updates"][serial]["status"] == "inactive":
                 devices.append(DeviceInfo(hostname=hostname, serial_number=serial))
     return devices
 
@@ -80,7 +80,7 @@ def get_config(client, device):
             logging.debug(f"Notif: {notif}")
             for entry in notif["updates"]:
                 logging.debug(f"Entry: {entry}")
-                node_id = entry # mostly for my own sanity, no real need to rebind to a new var
+                node_id = entry  # mostly for my own sanity, no real need to rebind to a new var
                 next = notif["updates"][node_id].get("next")
                 previous = notif["updates"][node_id].get("previous")
                 text = notif["updates"][node_id]["text"]
@@ -114,5 +114,7 @@ def get_configs(apiserver, access_token):
     with GRPCClient(apiserver, token=access_token) as client:
         devices = get_devices(client)
         for device in devices:
-            config = get_config(client, device)
-            logging.debug(f"Config: {config}")
+            device.config = get_config(client, device)
+            logging.debug(f"{device.hostname} config: {device.config}")
+
+        return devices

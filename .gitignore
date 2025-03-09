@@ -11,3 +11,7 @@ wheels/
 
 # Cluster access token
 cluster.tok
+
+# Duckdb file
+devices.duckdb
+devices.duckdb.wal

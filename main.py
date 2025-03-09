@@ -1,14 +1,17 @@
 import argparse
 import logging
+import duckdb
+import pathlib
 
-from fetch_configs import get_configs
+from fetch_configs import get_configs, DeviceInfo
+from search import search_configs
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Haystack - Search Arista device configurations from CVaaS")
     parser.add_argument(
         "--log-level",
         "-l",
-        default="INFO",
+        default="WARNING",
         help="Log level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         metavar="LEVEL",
@@ -29,12 +32,35 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     logging.basicConfig(level=args.log_level)
-    logging.debug(f"Args: {args}")
+    logging.info(f"Args: {args}")
 
     if args.command is None:
         parser.print_help()
         exit(1)
     elif args.command == "fetch-configs":
-        get_configs(args.apiserver, args.access_token)
+        devices = get_configs(args.apiserver, args.access_token)
+
+        # device configs retrieved, time to blow away our current duckdb file and write a new one
+        logging.info("Destroying existing duckdb file")
+        if pathlib.Path("devices.duckdb").exists():
+            pathlib.Path("devices.duckdb").unlink()
+
+        logging.info("Creating new duckdb file")
+        with duckdb.connect("devices.duckdb") as conn:
+            # create table
+            conn.execute("CREATE TABLE devices (hostname TEXT, serial_number TEXT, config TEXT)")
+
+            # prepare data for bulk insert
+            device_data = [(device.hostname, device.serial_number, device.config) for device in devices]
+            logging.info(f"Inserting {len(device_data)} rows into devices table")
+            conn.executemany("INSERT INTO devices (hostname, serial_number, config) VALUES (?, ?, ?)", device_data)
+
+            # create fts index
+            conn.execute("PRAGMA create_fts_index('devices', 'serial_number', 'config')")
     elif args.command == "search":
-        search_configs(args.query)
+        if not pathlib.Path("devices.duckdb").exists():
+            logging.error("devices.duckdb does not exist, please run fetch-configs first")
+            exit(1)
+        else:
+            with duckdb.connect("devices.duckdb") as conn:
+                search_configs(args.queries, conn)
